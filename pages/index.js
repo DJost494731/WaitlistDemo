@@ -1,65 +1,78 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import axios from "axios";
+import Head from "next/head";
+import { useEffect, useRef, useState } from "react";
+import styles from "../styles/Home.module.css";
 
 export default function Home() {
+  var [reservations, setReservations] = useState([]);
+  useInterval(() => {
+    getReservations().then((result) => {
+      console.log(result);
+      setReservations(result);
+    });
+  }, 1000);
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
+        <title>Waitlist Demo</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
+        <h1 className={styles.title}>Open Reservations</h1>
         <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+          {reservations.map((reservation) => (
+            <div className={styles.card}>
+              <div className={styles.row}>
+                <h3>{reservation.CustomerID}</h3>
+                <h5>Number Of Guests: {reservation.NumberOfGuests}</h5>
+              </div>
+              <p>
+                Waiting for{" "}
+                {getMinutesSince(reservation.TimePlacedUTC + " UTC")} minutes
+              </p>
+            </div>
+          ))}
         </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
     </div>
-  )
+  );
+}
+
+function getMinutesSince(time) {
+  var countDownDate = new Date(time);
+
+  var now = new Date();
+  var diffMs = now - countDownDate;
+
+  return Math.round(((diffMs % 86400000) % 3600000) / 60000);
+}
+
+async function getReservations() {
+  return (
+    await axios.get(
+      "https://2umw2103pa.execute-api.us-west-2.amazonaws.com/Prod/reservations"
+    )
+  ).data;
+}
+
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
 }
